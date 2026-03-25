@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Gateway | Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <header class="mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">AI Gateway Dashboard</h1>
+                <p class="text-gray-500 mt-1">Live traffic, routing, and cost analytics.</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <span class="text-sm text-gray-600">Gateway Online</span>
+            </div>
+        </header>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                <h3 class="text-sm font-medium text-gray-500 mb-1">Total Requests</h3>
+                <p class="text-3xl font-bold text-blue-600" id="kpi-total">0</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                <h3 class="text-sm font-medium text-gray-500 mb-1">Avg Latency</h3>
+                <p class="text-3xl font-bold text-indigo-600" id="kpi-latency">0 ms</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                <h3 class="text-sm font-medium text-gray-500 mb-1">Total Cost Estimates</h3>
+                <p class="text-3xl font-bold text-green-600" id="kpi-cost">$0.0000</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                <h3 class="text-sm font-medium text-gray-500 mb-1">Error Count</h3>
+                <p class="text-3xl font-bold text-red-600" id="kpi-errors">0</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <!-- Chart -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 lg:col-span-1">
+                <h3 class="text-lg font-semibold mb-4">Requests via Model Routing</h3>
+                <canvas id="modelChart" height="250"></canvas>
+            </div>
+
+            <!-- Routing Rules Table -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 lg:col-span-2 overflow-x-auto">
+                <h3 class="text-lg font-semibold mb-4">Active Routing Rules (Configured)</h3>
+                <table class="min-w-full text-sm text-left">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 cursor-pointer">Model Ref</th>
+                            <th class="px-4 py-3">Provider</th>
+                            <th class="px-4 py-3">Cost / 1K</th>
+                            <th class="px-4 py-3">Tags & Priority</th>
+                        </tr>
+                    </thead>
+                    <tbody id="routes-table-body" class="divide-y">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent Logs Table -->
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8 overflow-x-auto">
+            <h3 class="text-lg font-semibold mb-4">Recent Gateway Requests</h3>
+            <table class="min-w-full text-sm text-left">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3">Time</th>
+                        <th class="px-4 py-3">Client Key</th>
+                        <th class="px-4 py-3">Target Model</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Latency (ms)</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-table-body" class="divide-y font-mono text-xs">
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let chartInstance = null;
+
+        async function fetchMetrics() {
+            try {
+                const res = await fetch('/metrics');
+                const data = await res.json();
+                
+                // Update KPIs
+                document.getElementById('kpi-total').textContent = data.total_requests;
+                document.getElementById('kpi-latency').textContent = `${data.avg_latency.toFixed(1)} ms`;
+                document.getElementById('kpi-cost').textContent = '$' + data.total_cost.toFixed(4);
+                document.getElementById('kpi-errors').textContent = data.error_count;
+
+                // Update Chart
+                updateChart(data.requests_per_model);
+
+                // Update Logs
+                const logsBody = document.getElementById('logs-table-body');
+                logsBody.innerHTML = '';
+                data.recent_requests.forEach(req => {
+                    const statusClass = req.status_code >= 400 ? 'text-red-500' : 'text-green-500';
+                    const keyMasked = req.api_key.substring(0,6) + "***";
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="px-4 py-2">${new Date(req.timestamp * 1000).toLocaleTimeString()}</td>
+                        <td class="px-4 py-2 text-gray-500">${keyMasked}</td>
+                        <td class="px-4 py-2 text-blue-600">${req.model} <span class="text-gray-400 text-[10px]">(${req.provider})</span></td>
+                        <td class="px-4 py-2 font-bold ${statusClass}">${req.status_code}</td>
+                        <td class="px-4 py-2">${req.latency_ms.toFixed(0)}</td>
+                    `;
+                    logsBody.appendChild(tr);
+                });
+
+            } catch (err) {
+                console.error("Failed fetching metrics", err);
+            }
+        }
+
+        async function fetchRoutes() {
+            try {
+                const res = await fetch('/admin/routes');
+                const data = await res.json();
+                
+                const rb = document.getElementById('routes-table-body');
+                rb.innerHTML = '';
+                Object.entries(data.models).forEach(([model, cfg]) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 font-medium">${model}</td>
+                        <td class="px-4 py-3"><span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded border">${cfg.provider}</span></td>
+                        <td class="px-4 py-3 text-red-600 font-mono">$${cfg.cost_per_1k_tokens}</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">Priority: ${cfg.priority} | Tags: ${cfg.tags.join(', ')}</td>
+                    `;
+                    rb.appendChild(tr);
+                });
+            } catch (err) { }
+        }
+
+        function updateChart(modelData) {
+            const ctx = document.getElementById('modelChart').getContext('2d');
+            const labels = Object.keys(modelData);
+            const data = Object.values(modelData);
+            
+            if (chartInstance) {
+                chartInstance.data.labels = labels;
+                chartInstance.data.datasets[0].data = data;
+                chartInstance.update();
+            } else {
+                chartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: [
+                                '#3b82f6', '#10b981', '#f59e0b', '#6366f1', '#ef4444'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        cutout: '70%',
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Init
+        fetchRoutes();
+        fetchMetrics();
+        // Poll every 3 seconds
+        setInterval(fetchMetrics, 3000);
+
+    </script>
+</body>
+</html>

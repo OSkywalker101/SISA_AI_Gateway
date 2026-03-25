@@ -1,0 +1,108 @@
+﻿python : C:\Users\olive
+\AppData\Roaming\Python
+\Python310\site-package
+s\pytest_asyncio\plugin
+.py:208: PytestDeprecat
+ionWarning: The 
+configuration option "a
+syncio_default_fixture_
+loop_scope" is unset.
+At line:1 char:1
++ python -m pytest 
+tests/ -v > 
+test_output.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (C:\Users\oliv   
+ e\...cope" is unse    
+t.:String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+The event loop scope 
+for asynchronous 
+fixtures will default 
+to the fixture caching 
+scope. Future versions 
+of pytest-asyncio will 
+default the loop scope 
+for asynchronous 
+fixtures to function 
+scope. Set the default 
+fixture loop scope 
+explicitly in order to 
+avoid unexpected 
+behavior in the 
+future. Valid fixture 
+loop scopes are: 
+"function", "class", 
+"module", "package", 
+"session"
+
+  warnings.warn(PytestD
+eprecationWarning(_DEFA
+ULT_FIXTURE_LOOP_SCOPE_
+UNSET))
+============================= test session starts =============================
+platform win32 -- Python 3.10.11, pytest-8.3.4, pluggy-1.6.0 -- C:\Program Files\Python310\python.exe
+cachedir: .pytest_cache
+rootdir: E:\gitprac\SISA\Two
+plugins: anyio-4.12.0, hydra-core-1.3.2, langsmith-0.7.14, asyncio-0.24.0
+asyncio: mode=strict, default_loop_scope=None
+collecting ... collected 0 items / 2 errors
+
+=================================== ERRORS ====================================
+_________________ ERROR collecting tests/test_rate_limiter.py _________________
+tests\test_rate_limiter.py:3: in <module>
+    from gateway.middleware.rate_limiter import get_rate_limiter, buckets
+gateway\middleware\rate_limiter.py:3: in <module>
+    from config import settings
+config.py:100: in <module>
+    settings = Settings()
+C:\Users\olive\AppData\Roaming\Python\Python310\site-packages\pydantic_settings\main.py:167: in __init__
+    super().__init__(
+E   pydantic_core._pydantic_core.ValidationError: 2 validation errors for Settings
+E   gateway_api_keys
+E     Extra inputs are not permitted [type=extra_forbidden, input_value='gw-test-key-123,gw-pro-k...6,gw-enterprise-key-789', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.10/v/extra_forbidden
+E   key_tiers
+E     Extra inputs are not permitted [type=extra_forbidden, input_value='gw-test-key-123:free,gw-...rise-key-789:enterprise', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.10/v/extra_forbidden
+____________________ ERROR collecting tests/test_router.py ____________________
+tests\test_router.py:2: in <module>
+    from gateway.router.rules import detect_task_type, select_model
+gateway\router\rules.py:2: in <module>
+    from config import settings
+config.py:100: in <module>
+    settings = Settings()
+C:\Users\olive\AppData\Roaming\Python\Python310\site-packages\pydantic_settings\main.py:167: in __init__
+    super().__init__(
+E   pydantic_core._pydantic_core.ValidationError: 2 validation errors for Settings
+E   gateway_api_keys
+E     Extra inputs are not permitted [type=extra_forbidden, input_value='gw-test-key-123,gw-pro-k...6,gw-enterprise-key-789', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.10/v/extra_forbidden
+E   key_tiers
+E     Extra inputs are not permitted [type=extra_forbidden, input_value='gw-test-key-123:free,gw-...rise-key-789:enterprise', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.10/v/extra_forbidden
+============================== warnings summary ===============================
+C:\Users\olive\AppData\Roaming\Python\Python310\site-packages\pydantic\fields.py:1042
+C:\Users\olive\AppData\Roaming\Python\Python310\site-packages\pydantic\fields.py:1042
+  C:\Users\olive\AppData\Roaming\Python\Python310\site-packages\pydantic\fields.py:1042: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'env'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warn(
+
+C:\Users\olive\AppData\Roaming\Python\Python310\site-packages\pydantic\_internal\_config.py:295
+C:\Users\olive\AppData\Roaming\Python\Python310\site-packages\pydantic\_internal\_config.py:295
+  C:\Users\olive\AppData\Roaming\Python\Python310\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+ERROR tests/test_rate_limiter.py - pydantic_core._pydantic_core.ValidationErr...
+ERROR tests/test_router.py - pydantic_core._pydantic_core.ValidationError: 2 ...
+!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!
+======================== 4 warnings, 2 errors in 0.89s ========================
